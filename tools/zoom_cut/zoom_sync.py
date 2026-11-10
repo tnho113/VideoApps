@@ -186,6 +186,10 @@ class ZoomSync:
     def run(self, accounts, limit=None, dry_run=False, workdir="/content/zoom"):
         """accounts: {'ZKI': (account_id, client_id, client_secret), ...}.
         dry_run=True: chỉ liệt kê, không tải, không ghi Sheet."""
+        if not accounts:
+            print("⚠️ Chưa nạp được khóa của tài khoản Zoom nào. Kiểm tra tên khóa trong Secrets "
+                  "(ZOOM_<MÃ>_ACCOUNT_ID / _CLIENT_ID / _CLIENT_SECRET), Notebook access, và dòng TAI_KHOAN.")
+            return []
         cfg = self.config()
         root = drive_id(cfg.get("Thư mục gốc lưu video Zoom", ""))
         since = cfg.get("Lấy bản ghi từ ngày", "") or (dt.date.today() - dt.timedelta(days=30)).isoformat()
