@@ -243,6 +243,9 @@ class Job:
 
     def publish(self, video_path, thumb_path, srt_path=None, privacy="private", test=False):
         """Đăng YouTube lên đúng kênh của Loại video, thêm playlist, ghi link/trạng thái vào Sheet."""
+        import importlib
+        import upload_youtube
+        importlib.reload(upload_youtube)  # luôn dùng bản code mới nhất vừa tải ở Bước 1
         from upload_youtube import add_to_playlist, channel_info, channel_matches, get_credentials, upload
         self.refresh()
         kenh = self.vtype.get("Kênh YouTube", "").strip()
