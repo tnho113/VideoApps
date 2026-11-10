@@ -149,6 +149,35 @@ def safe_name(text):
     return re.sub(r'[\\/:*?"<>|]+', "-", text).strip()[:80]
 
 
+def parse_env(text):
+    """Nội dung .env → dict (bỏ dòng trống/chú thích, 'export ', dấu nháy)."""
+    out = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k = k.replace("export ", "").strip().upper()
+        out[k] = v.strip().strip('"').strip("'")
+    return out
+
+
+def env_accounts(env, codes):
+    """Lấy (account_id, client_id, client_secret) cho từng mã tài khoản.
+    Chấp nhận ZOOM_<MÃ>_ACCOUNT_ID…; nếu chỉ 1 tài khoản thì chấp nhận cả ZOOM_ACCOUNT_ID / ACCOUNT_ID…"""
+    fields = ("ACCOUNT_ID", "CLIENT_ID", "CLIENT_SECRET")
+    out = {}
+    for code in codes:
+        names = [[f"ZOOM_{code}_{f}"] + ([f"ZOOM_{f}", f] if len(codes) == 1 else []) for f in fields]
+        vals = [next((env[n] for n in opts if env.get(n)), "") for opts in names]
+        if all(vals):
+            out[code] = tuple(vals)
+        else:
+            missing = [opts[0] for opts, v in zip(names, vals) if not v]
+            print(f"⚠️ Tài khoản {code}: thiếu {', '.join(missing)} trong .env")
+    return out
+
+
 # ---------------- Đồng bộ (dùng trong Colab / máy chạy) ----------------
 class ZoomSync:
     def __init__(self, sheet_id=SHEET_ID, creds=None):
@@ -158,6 +187,27 @@ class ZoomSync:
         creds = creds or google.auth.default()[0]
         self.ss = gspread.authorize(creds).open_by_key(sheet_id)
         self.drive = build("drive", "v3", credentials=creds)
+
+    def accounts_from_env(self, codes, name=".env"):
+        """Đọc file .env nằm cùng thư mục với Sheet điều khiển (không in giá trị khóa)."""
+        import io
+        from googleapiclient.http import MediaIoBaseDownload
+        parent = self.drive.files().get(fileId=self.ss.id, fields="parents",
+                                        supportsAllDrives=True).execute()["parents"][0]
+        f = self.drive.files().list(q=f"'{parent}' in parents and name='{name}' and trashed=false",
+                                    fields="files(id)", supportsAllDrives=True,
+                                    includeItemsFromAllDrives=True).execute()["files"]
+        if not f:
+            print(f"⚠️ Không thấy file {name} trong thư mục chứa Sheet điều khiển")
+            return {}
+        buf = io.BytesIO()
+        dl = MediaIoBaseDownload(buf, self.drive.files().get_media(fileId=f[0]["id"]))
+        done = False
+        while not done:
+            _, done = dl.next_chunk()
+        env = parse_env(buf.getvalue().decode("utf-8-sig"))
+        print("Các tên khóa có trong .env:", ", ".join(sorted(env)) or "(trống)")
+        return env_accounts(env, [c.strip().upper() for c in codes])
 
     def config(self):
         return {r["Mục"]: r["Giá trị"] for r in records(self.ss.worksheet("Cấu hình").get_all_values())}
