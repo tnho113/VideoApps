@@ -292,7 +292,12 @@ class ZoomSync:
                        "Chế độ": "Chờ duyệt", "Trạng thái": "Mới", "Zoom ID": m["uuid"],
                        "Ghi chú": ("" if cls else "Chưa có trong danh sách lớp – bổ sung rồi sửa Mã/Tiêu đề. ") +
                                   ("" if vtt else "Zoom không có transcript – bật 'Audio transcript'.")}
-                ws.append_row([row.get(h, "") for h in head], value_input_option="USER_ENTERED")
+                # Ghi vào dòng trống đầu tiên (cột Mã video trống) – không dùng append_row vì
+                # các cột ô tick làm Sheet tưởng bảng kéo dài tới dòng 500
+                col_a = ws.col_values(1)
+                r = next((i + 1 for i, v in enumerate(col_a) if i > 0 and not v.strip()), len(col_a) + 1)
+                ws.update(range_name=f"A{r}", values=[[row.get(h, "") for h in head]],
+                          value_input_option="USER_ENTERED")
                 added.append(code)
                 done += 1
                 print(f"  ✅ {code}")
