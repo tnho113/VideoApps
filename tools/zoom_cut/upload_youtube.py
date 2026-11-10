@@ -30,14 +30,26 @@ def get_credentials(client_secret, token_path):
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # chỉ để nhận mã từ http://localhost
         flow = InstalledAppFlow.from_client_secrets_file(
             client_secret, SCOPES, redirect_uri="http://localhost:1")
-        url, _ = flow.authorization_url(access_type="offline", prompt="consent")
-        print("1) Mở link này và cho phép:\n", url)
+        url, _ = flow.authorization_url(access_type="offline", prompt="consent select_account")
+        print("1) Mở link này, CHỌN ĐÚNG KÊNH YouTube cần đăng, rồi cho phép:\n", url)
         resp = input("2) Dán địa chỉ trang localhost sau khi cho phép: ").strip()
         flow.fetch_token(authorization_response=resp)
         creds = flow.credentials
     with open(token_path, "w") as f:
         f.write(creds.to_json())
     return creds
+
+
+def channel_title(creds):
+    yt = build("youtube", "v3", credentials=creds)
+    items = yt.channels().list(part="snippet", mine=True).execute().get("items", [])
+    return items[0]["snippet"]["title"] if items else ""
+
+
+def add_to_playlist(creds, video_id, playlist_id):
+    yt = build("youtube", "v3", credentials=creds)
+    yt.playlistItems().insert(part="snippet", body={"snippet": {
+        "playlistId": playlist_id, "resourceId": {"kind": "youtube#video", "videoId": video_id}}}).execute()
 
 
 def upload(video, title, description, tags, thumbnail, privacy, creds, captions=None):

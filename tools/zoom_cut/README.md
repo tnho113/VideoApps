@@ -11,12 +11,15 @@ Quy trình: Zoom (MP4 + transcript .vtt) → Drive → AI đọc transcript ra `
 | `upload_youtube.py` | Đăng YouTube qua API (Riêng tư) + thumbnail + phụ đề |
 | `EWIT_Zoom_Cut.ipynb` | Sổ tay Colab nối tất cả các bước |
 
-## Cài đặt YouTube API (một lần, ~15 phút)
-1. Vào console.cloud.google.com → tạo dự án mới (ví dụ `ewit-youtube`).
-2. **APIs & Services → Library** → tìm **YouTube Data API v3** → **Enable**.
-3. **OAuth consent screen** → chọn **External** → điền tên app, email → ở **Test users** thêm Gmail sở hữu kênh YouTube.
-4. **Credentials → Create credentials → OAuth client ID** → loại **Desktop app** → **Download JSON**.
-5. Đổi tên file thành `client_secret.json`, bỏ vào cùng thư mục Drive với video.
-6. Trong sổ tay, Bước 7: đặt `DANG_YOUTUBE = True` và chạy. Mở link hiện ra, đăng nhập, cho phép; trình duyệt chuyển tới trang lỗi `localhost` → copy **toàn bộ địa chỉ** trên thanh trình duyệt, dán vào ô nhập.
+## Cài đặt YouTube API (một lần)
+1. console.cloud.google.com → Google Auth Platform → **Get started** (App info · Audience = **External** · Contact) → Create.
+2. **Audience → Test users** → thêm Gmail sở hữu kênh.
+3. **Clients → Create client → Desktop app** → Download JSON → đổi tên `client_secret.json` → để trong thư mục chứa Sheet điều khiển ("00 · Điều hành IT").
+4. Bật **YouTube Data API v3** trong cùng dự án.
+5. Tab **Loại video**: điền **Kênh YouTube** (tên kênh đúng như trên YouTube) và **Playlist YouTube** (tùy chọn).
 
-Lưu ý: muốn gắn thumbnail tùy chỉnh, kênh cần xác minh tại youtube.com/verify. Dự án chưa được Google kiểm duyệt có thể chỉ đăng được ở chế độ Riêng tư; bạn tự chuyển sang Công khai trong YouTube Studio.
+Lần đầu đăng cho mỗi kênh: mở link → chọn đúng kênh → cho phép → copy địa chỉ trang `localhost` dán vào ô nhập.
+Vé đăng nhập lưu thành `youtube_token_<ten-kenh>.json` cùng thư mục, dùng lại cho các lần sau.
+Tool kiểm tra tên kênh: đăng nhập nhầm kênh sẽ dừng, không đăng. **Ai có quyền vào thư mục này thì dùng được vé đăng nhập** – chỉ chia sẻ cho người tin cậy.
+
+Lưu ý: thumbnail tùy chỉnh cần kênh đã xác minh (youtube.com/verify). App ở chế độ Testing có thể phải đăng nhập lại sau khoảng 7 ngày.

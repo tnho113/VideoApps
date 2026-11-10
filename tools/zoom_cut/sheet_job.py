@@ -205,5 +205,80 @@ class Job:
         compose(layout, self._get(tpl["Link ảnh nền"]), content, out, people, kieu, logo, show)
         return f"Mẫu {tpl['Mã mẫu']}, kiểu {kieu}. " + note + note2
 
+    # ---------- YouTube ----------
+    def central_folder(self):
+        """Thư mục chứa Sheet điều khiển ("00 · Điều hành IT") – nơi để client_secret.json và token."""
+        return self.drive.files().get(fileId=self.ss.id, fields="parents",
+                                      supportsAllDrives=True).execute()["parents"][0]
 
-__all__ = ["Job", "build_people", "photo_style", "choose_template", "build_recipe", "fill_template", "speaker_line", "records", "fmt"]
+    def _find(self, folder, name):
+        f = self._list(f"'{folder}' in parents and name='{name}' and trashed=false")
+        return f[0]["id"] if f else None
+
+    def _put(self, folder, path):
+        from googleapiclient.http import MediaFileUpload
+        name, media = os.path.basename(path), MediaFileUpload(path)
+        fid = self._find(folder, name)
+        if fid:
+            self.drive.files().update(fileId=fid, media_body=media, supportsAllDrives=True).execute()
+        else:
+            self.drive.files().create(body={"name": name, "parents": [folder]}, media_body=media,
+                                      supportsAllDrives=True).execute()
+
+    def publish(self, video_path, thumb_path, srt_path=None, privacy="private", test=False):
+        """Đăng YouTube lên đúng kênh của Loại video, thêm playlist, ghi link/trạng thái vào Sheet."""
+        from upload_youtube import add_to_playlist, channel_title, get_credentials, upload
+        self.refresh()
+        kenh = self.vtype.get("Kênh YouTube", "").strip()
+        if not kenh:
+            raise ValueError("Tab Loại video chưa điền cột 'Kênh YouTube' cho loại này")
+        folder = self.central_folder()
+        sec = self._find(folder, "client_secret.json")
+        if not sec:
+            raise FileNotFoundError("Chưa có client_secret.json trong thư mục chứa Sheet điều khiển")
+        self.download(sec, "/content/client_secret.json")
+        token_name = f"youtube_token_{slug(kenh)}.json"
+        token_path = f"/content/{token_name}"
+        tid = self._find(folder, token_name)
+        if tid and not os.path.exists(token_path):
+            self.download(tid, token_path)
+        try:
+            creds = get_credentials("/content/client_secret.json", token_path)
+            actual = channel_title(creds)
+            if actual.strip().lower() != kenh.lower():
+                os.remove(token_path)
+                raise ValueError(f"Đã đăng nhập kênh '{actual}', nhưng Sheet yêu cầu kênh '{kenh}'. "
+                                 "Chạy lại ô này và chọn đúng kênh.")
+            self._put(folder, token_path)  # lưu vé đăng nhập dùng chung cho lần sau
+            recipe = build_recipe(self.video, self.vtype, self.cuts)
+            vid = upload(video_path, self.video.get("Tiêu đề", ""), recipe["mo_ta"], recipe["the_tag"],
+                         thumb_path, privacy, creds, srt_path)
+            note = ("Bản thử – " if test else "") + f"Đã đăng kênh {actual} ({privacy}). "
+            pl = playlist_id(self.vtype.get("Playlist YouTube", ""))
+            if pl:
+                try:
+                    add_to_playlist(creds, vid, pl)
+                    note += "Đã thêm vào playlist. "
+                except Exception as e:
+                    note += f"Chưa thêm được playlist: {str(e)[:120]}. "
+            done = {"Ghi chú": note} if test else {"Trạng thái": "Xong", "Ghi chú": note}
+            self.set(YouTube=f"https://youtu.be/{vid}", **done)
+            return vid, note
+        except Exception as e:
+            self.set(**{"Trạng thái": "Lỗi", "Ghi chú": f"Đăng YouTube lỗi: {str(e)[:300]}"})
+            raise
+
+
+def slug(text):
+    import unicodedata
+    t = unicodedata.normalize("NFD", text.replace("đ", "d").replace("Đ", "D"))
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
+    return re.sub(r"[^a-z0-9]+", "-", t).strip("-") or "kenh"
+
+
+def playlist_id(link):
+    m = re.search(r"list=([\w-]+)", link or "")
+    return m.group(1) if m else (link or "").strip()
+
+
+__all__ = ["slug", "playlist_id", "Job", "build_people", "photo_style", "choose_template", "build_recipe", "fill_template", "speaker_line", "records", "fmt"]
