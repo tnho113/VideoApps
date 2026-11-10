@@ -225,6 +225,22 @@ class Job:
             self.drive.files().create(body={"name": name, "parents": [folder]}, media_body=media,
                                       supportsAllDrives=True).execute()
 
+    def fetch_result(self, name, workdir="/content"):
+        """Lấy file từ ket_qua/ về máy (nếu máy chưa có). Trả về đường dẫn hoặc None."""
+        path = os.path.join(workdir, name)
+        if os.path.exists(path):
+            return path
+        fid = self._find(self.result_folder(), name)
+        return self.download(fid, path) if fid else None
+
+    def publish_results(self, ten, test=False, privacy="private"):
+        """Đăng bộ file <ten>.mp4/.jpg/.srt trong ket_qua/ – không cần chạy lại bước cắt."""
+        video = self.fetch_result(ten + ".mp4")
+        if not video:
+            raise FileNotFoundError(f"Không thấy {ten}.mp4 trong ket_qua – hãy chạy Bước 3–4 trước")
+        return self.publish(video, self.fetch_result(ten + ".jpg"), self.fetch_result(ten + ".srt"),
+                            privacy, test)
+
     def publish(self, video_path, thumb_path, srt_path=None, privacy="private", test=False):
         """Đăng YouTube lên đúng kênh của Loại video, thêm playlist, ghi link/trạng thái vào Sheet."""
         from upload_youtube import add_to_playlist, channel_title, get_credentials, upload
