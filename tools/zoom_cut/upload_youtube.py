@@ -40,10 +40,27 @@ def get_credentials(client_secret, token_path):
     return creds
 
 
-def channel_title(creds):
+def channel_info(creds):
+    """Kênh đang đăng nhập: {'id', 'title', 'handle'} (handle dạng @abc, chữ thường)."""
     yt = build("youtube", "v3", credentials=creds)
     items = yt.channels().list(part="snippet", mine=True).execute().get("items", [])
-    return items[0]["snippet"]["title"] if items else ""
+    if not items:
+        return {"id": "", "title": "", "handle": ""}
+    sn = items[0]["snippet"]
+    return {"id": items[0]["id"], "title": sn.get("title", ""), "handle": sn.get("customUrl", "").lower()}
+
+
+def channel_matches(wanted, info):
+    """wanted có thể là link kênh, @handle, ID kênh (UC...) hoặc tên kênh."""
+    import re
+    w = wanted.strip()
+    m = re.search(r"(@[\w.\-]+)", w)
+    if m:
+        return m.group(1).lower() == info["handle"]
+    m = re.search(r"(UC[\w-]{20,})", w)
+    if m:
+        return m.group(1) == info["id"]
+    return w.lower() == info["title"].strip().lower()
 
 
 def add_to_playlist(creds, video_id, playlist_id):

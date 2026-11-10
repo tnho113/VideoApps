@@ -243,7 +243,7 @@ class Job:
 
     def publish(self, video_path, thumb_path, srt_path=None, privacy="private", test=False):
         """Đăng YouTube lên đúng kênh của Loại video, thêm playlist, ghi link/trạng thái vào Sheet."""
-        from upload_youtube import add_to_playlist, channel_title, get_credentials, upload
+        from upload_youtube import add_to_playlist, channel_info, channel_matches, get_credentials, upload
         self.refresh()
         kenh = self.vtype.get("Kênh YouTube", "").strip()
         if not kenh:
@@ -256,17 +256,19 @@ class Job:
         if not sec:
             raise FileNotFoundError("Chưa có client_secret.json trong thư mục chứa Sheet điều khiển")
         self.download(sec, "/content/client_secret.json")
-        token_name = f"youtube_token_{slug(kenh)}.json"
+        key = (re.search(r"@[\w.\-]+", kenh) or re.search(r"UC[\w-]{20,}", kenh))
+        token_name = f"youtube_token_{slug(key.group(0) if key else kenh)}.json"
         token_path = f"/content/{token_name}"
         tid = self._find(folder, token_name)
         if tid and not os.path.exists(token_path):
             self.download(tid, token_path)
         try:
             creds = get_credentials("/content/client_secret.json", token_path)
-            actual = channel_title(creds)
-            if actual.strip().lower() != kenh.lower():
+            info = channel_info(creds)
+            actual = f"{info['title']} ({info['handle'] or info['id']})"
+            if not channel_matches(kenh, info):
                 os.remove(token_path)
-                raise ValueError(f"Đã đăng nhập kênh '{actual}', nhưng Sheet yêu cầu kênh '{kenh}'. "
+                raise ValueError(f"Đã đăng nhập kênh {actual}, nhưng Sheet yêu cầu kênh '{kenh}'. "
                                  "Chạy lại ô này và chọn đúng kênh.")
             self._put(folder, token_path)  # lưu vé đăng nhập dùng chung cho lần sau
             recipe = build_recipe(self.video, self.vtype, self.cuts)
