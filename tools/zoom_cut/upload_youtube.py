@@ -17,13 +17,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload",
-          "https://www.googleapis.com/auth/youtube"]
+          "https://www.googleapis.com/auth/youtube",
+          "https://www.googleapis.com/auth/youtube.force-ssl"]  # force-ssl: cần để tải phụ đề
 
 
 def get_credentials(client_secret, token_path):
     creds = None
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    if creds and not creds.has_scopes(SCOPES):  # vé cũ thiếu quyền (ví dụ phụ đề) → đăng nhập lại 1 lần
+        print("Vé đăng nhập cũ thiếu quyền mới – cần đăng nhập lại một lần.")
+        creds = None
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
     if not creds or not creds.valid:
