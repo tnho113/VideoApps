@@ -130,7 +130,7 @@ def place_outside(img, people, spec, show_names=False):
     x0, y0, x1, y1 = spec.get("hop_phu_ngoai") or [cx - R, cy - R - int(R * 0.6), cx + R, min(H, cy + R)]
     clip = Image.new("L", (W, H), 0)
     dc = ImageDraw.Draw(clip)
-    dc.rectangle([0, 0, W, cy], fill=255)                 # trên tâm: được tràn ra
+    dc.rectangle([cx - 0.62 * R, 0, cx + 0.62 * R, cy], fill=255)  # chỉ vùng đầu/vai ở giữa được tràn ra
     dc.ellipse([cx - R, cy - R, cx + R, cy + R], fill=255)  # dưới tâm: gọn trong vòng tròn
     n = len(people)
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -141,7 +141,8 @@ def place_outside(img, people, spec, show_names=False):
         if box:
             im = im.crop(box)
         h_max = (y1 - y0) * (1 if n == 1 else 0.85)
-        scale = min(slot_w / im.width, h_max / im.height)
+        # Ưu tiên chiều cao để đầu/vai tràn khỏi vòng tròn; cho phép rộng hơn ô 30% (vai, tay)
+        scale = min(1.3 * slot_w / im.width, h_max / im.height)
         im = im.resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS)
         sx = int(x0 + i * slot_w * 0.6 + (slot_w - im.width) / 2)
         layer.alpha_composite(im, (sx, int(y1 - im.height)))
