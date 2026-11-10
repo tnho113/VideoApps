@@ -250,6 +250,9 @@ class Job:
             raise ValueError("Tab Loại video chưa điền cột 'Kênh YouTube' cho loại này")
         folder = self.central_folder()
         sec = self._find(folder, "client_secret.json")
+        if not sec:  # chấp nhận tên bị lặp đuôi/kèm mã, ví dụ client_secret.json.json, client_secret_123.json
+            f = self._list(f"'{folder}' in parents and name contains 'client_secret' and trashed=false")
+            sec = f[0]["id"] if f else None
         if not sec:
             raise FileNotFoundError("Chưa có client_secret.json trong thư mục chứa Sheet điều khiển")
         self.download(sec, "/content/client_secret.json")
