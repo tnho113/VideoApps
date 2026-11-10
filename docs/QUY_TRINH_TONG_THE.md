@@ -46,4 +46,4 @@ Thêm loại buổi mới = thêm 1 dòng hồ sơ + 1 ảnh nền + 1 file bố
 | 1 | Kiểm chứng lõi: cắt + thumbnail, thử 10 phút | Đang chạy thử |
 | 2 | Sheet điều khiển + hồ sơ loại buổi; Colab đọc/ghi Sheet; mẫu B | Đang làm |
 | 3 | Đăng YouTube, ghi link vào Sheet | Code có, chưa cài đặt API |
-| 4 | Tự động hoàn toàn: Zoom API, Claude API, GitHub Actions | Chưa làm |
+| 4 | Tự động hoàn toàn: P1 Zoom → Drive + Sheet (`zoom_sync.py`, sổ tay `EWIT_Lay_video_Zoom`) · P2 Claude API ra công thức cắt · P3 GitHub Actions chạy theo lịch · P4 thông báo | P1 đang làm |
