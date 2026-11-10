@@ -8,6 +8,7 @@ copy NGUYÊN địa chỉ trên thanh trình duyệt dán vào ô nhập. Token 
         --client-secret client_secret.json --token youtube_token.json
 """
 import argparse
+import json
 import os
 
 from google.auth.transport.requests import Request
@@ -24,12 +25,19 @@ SCOPES = ["https://www.googleapis.com/auth/youtube.upload",
 def get_credentials(client_secret, token_path):
     creds = None
     if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    if creds and not creds.has_scopes(SCOPES):  # vé cũ thiếu quyền (ví dụ phụ đề) → đăng nhập lại 1 lần
-        print("Vé đăng nhập cũ thiếu quyền mới – cần đăng nhập lại một lần.")
-        creds = None
+        # Đọc đúng các quyền đã lưu trong vé (không ép SCOPES mới) rồi mới so sánh
+        with open(token_path) as f:
+            saved = set(json.load(f).get("scopes") or [])
+        if not set(SCOPES) <= saved:  # vé cũ thiếu quyền (ví dụ phụ đề) → đăng nhập lại 1 lần
+            print("Vé đăng nhập cũ thiếu quyền mới – cần đăng nhập lại một lần.")
+        else:
+            creds = Credentials.from_authorized_user_file(token_path)
     if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+        try:
+            creds.refresh(Request())
+        except Exception as e:  # vé hết hạn / bị thu hồi → đăng nhập lại thay vì dừng
+            print("Vé đăng nhập không dùng được nữa (", str(e)[:80], ") – cần đăng nhập lại.")
+            creds = None
     if not creds or not creds.valid:
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # chỉ để nhận mã từ http://localhost
         flow = InstalledAppFlow.from_client_secrets_file(
