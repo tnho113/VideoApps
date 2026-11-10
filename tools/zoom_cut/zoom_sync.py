@@ -1,6 +1,6 @@
-"""P1 – Tự lấy bản ghi Zoom Cloud mới → thư mục Drive theo lớp (Course_ID-TàiKhoản-ZoomID) → thêm dòng ở tab Video.
+"""P1 – Tự lấy bản ghi Zoom Cloud mới → thư mục Drive theo lớp (MãKhóa-TàiKhoản-ZoomID) → thêm dòng ở tab Video.
 
-Lớp được xác định từ file danh sách lớp (Zoom ID + khoảng ngày + giờ bắt đầu), không dựa vào tên phòng.
+Lớp được xác định từ tab "Danh sách lớp" của Sheet điều khiển (Zoom ID + khoảng ngày + giờ bắt đầu), không dựa vào tên phòng.
 
 Cần ứng dụng Zoom "Server-to-Server OAuth" (Account ID, Client ID, Client Secret) có quyền đọc bản ghi.
 Không tải lại buổi đã có (so theo cột "Zoom ID" ở tab Video).
@@ -102,9 +102,8 @@ def digits(x):
 
 
 def read_classes(values):
-    """Bảng danh sách lớp (dòng tiêu đề là dòng có ô 'Zoom ID') → list dict."""
-    hi = next(i for i, r in enumerate(values) if "Zoom ID" in r)
-    return [r for r in records(values[hi:]) if digits(r.get("Zoom ID"))]
+    """Tab 'Danh sách lớp' → list dict (chỉ dòng có Zoom ID)."""
+    return [r for r in records(values) if digits(r.get("Zoom ID"))]
 
 
 def acc_code(zoom_acc):
@@ -118,13 +117,13 @@ def match_class(meeting, classes, acc=None):
     mid = digits(meeting.get("id"))
     cands = []
     for c in classes:
-        if digits(c["Zoom ID"]) != mid or (acc and acc_code(c.get("Zoom Acc")) != acc):
+        if digits(c["Zoom ID"]) != mid or (acc and acc_code(c.get("Tài khoản Zoom")) != acc):
             continue
-        f, to = _date(c.get("Eff_From")), _date(c.get("Eff_To"))
+        f, to = _date(c.get("Từ ngày")), _date(c.get("Đến ngày"))
         if (f and t.date() < f) or (to and t.date() > to):
             continue
         try:
-            gap = abs(_minutes(c.get("Start time", "")) - (t.hour * 60 + t.minute))
+            gap = abs(_minutes(c.get("Giờ bắt đầu", "")) - (t.hour * 60 + t.minute))
         except ValueError:
             gap = 9999
         cands.append((gap, c))
@@ -133,7 +132,7 @@ def match_class(meeting, classes, acc=None):
 
 def folder_name(cls, acc, zoom_id):
     """'EG2-01-ZKI-936 3686 9490'; buổi chưa có trong danh sách: 'CHUA-XEP-ZKI-936 3686 9490'."""
-    return f"{cls['Course_ID'] if cls else 'CHUA-XEP'}-{acc}-{zoom_id}"
+    return f"{cls['Mã khóa'] if cls else 'CHUA-XEP'}-{acc}-{zoom_id}"
 
 
 def pretty_id(meeting_id):
@@ -190,9 +189,7 @@ class ZoomSync:
         cfg = self.config()
         root = drive_id(cfg.get("Thư mục gốc lưu video Zoom", ""))
         since = cfg.get("Lấy bản ghi từ ngày", "") or (dt.date.today() - dt.timedelta(days=30)).isoformat()
-        cls_ss = self.ss.client.open_by_key(drive_id(cfg["Danh sách lớp (Google Sheet)"]) or
-                                             cfg["Danh sách lớp (Google Sheet)"])
-        classes = read_classes(cls_ss.worksheet(cfg.get("Tab danh sách lớp", "EWT-CLASSES")).get_all_values())
+        classes = read_classes(self.ss.worksheet("Danh sách lớp").get_all_values())
         ws = self.ss.worksheet("Video")
         rows = ws.get_all_values()
         head = [re.sub(r"\s*\(.*$", "", h).strip() for h in rows[0]]
@@ -220,7 +217,7 @@ class ZoomSync:
                 if dry_run or not mp4:
                     continue
                 folder = self._folder(root, safe_name(fname))
-                base = f"{cls['Course_ID'] if cls else 'CHUA-XEP-' + acc}_{t:%Y-%m-%d_%H%M}"
+                base = f"{cls['Mã khóa'] if cls else 'CHUA-XEP-' + acc}_{t:%Y-%m-%d_%H%M}"
                 for f, ext in ((mp4, "mp4"), (vtt, "vtt")):
                     if f:
                         p = os.path.join(workdir, f"{base}.{ext}")
@@ -229,14 +226,14 @@ class ZoomSync:
                         self._upload(p, folder)
                         os.remove(p)
                 if cls:
-                    n = sum(1 for c in codes if c.startswith(cls["Course_ID"] + "-B")) + 1
-                    code, buoi = f"{cls['Course_ID']}-B{n:02d}", f"Buổi {n:02d}"
+                    n = sum(1 for c in codes if c.startswith(cls["Mã khóa"] + "-B")) + 1
+                    code, buoi = f"{cls['Mã khóa']}-B{n:02d}", f"Buổi {n:02d}"
                 else:
                     code, buoi = f"CHUA-XEP-{acc}-{t:%Y%m%d-%H%M}", ""
                 codes.append(code)
                 row = {"Mã video": code, "Loại video": (cls or {}).get("Loại video", ""), "Buổi số": buoi,
-                       "Tiêu đề": cls["Class name"] if cls else m.get("topic", ""),
-                       "Người chính": (cls or {}).get("Giáo viên", ""), "Ngày giờ": vn_label(m["start_time"]),
+                       "Tiêu đề": cls["Tên lớp"] if cls else m.get("topic", ""),
+                       "Người chính": (cls or {}).get("Giáo viên / Người chính", ""), "Ngày giờ": vn_label(m["start_time"]),
                        "Thư mục Drive của buổi": f"https://drive.google.com/drive/folders/{folder}",
                        "Chế độ": "Chờ duyệt", "Trạng thái": "Mới", "Zoom ID": m["uuid"],
                        "Ghi chú": ("" if cls else "Chưa có trong danh sách lớp – bổ sung rồi sửa Mã/Tiêu đề. ") +
