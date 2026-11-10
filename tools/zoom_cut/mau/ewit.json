@@ -1,5 +1,5 @@
 {
-  "_ghi_chu": "EWIT – 4 biến thể màu dùng chung bố cục; {nhan} = cột Màu nhấn trong tab Mẫu thumbnail.",
+  "_ghi_chu": "EWIT – 4 biến thể màu (nền đã có logo). {nhan} = Màu nhấn, {nhan2} = Màu nhấn 2 (chữ LIVE).",
   "chu": {
     "tieu_de": {
       "xy": [
@@ -38,16 +38,16 @@
   },
   "nhan_goc": {
     "hop": [
-      290,
-      66,
-      464,
-      109
+      170,
+      72,
+      344,
+      116
     ],
     "mau": "#3D0A6E",
     "bo_goc": 22,
     "xy": [
-      309,
-      76
+      189,
+      83
     ],
     "phan": [
       {
@@ -64,14 +64,6 @@
         "co": 20,
         "mau": "{nhan2}"
       }
-    ]
-  },
-  "logo": {
-    "hop": [
-      50,
-      40,
-      246,
-      150
     ]
   },
   "o_anh": {
