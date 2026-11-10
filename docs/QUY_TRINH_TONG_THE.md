@@ -2,7 +2,8 @@
 
 > Cập nhật 2026-11-10. Tài liệu chốt cách tool vận hành. Code: `tools/zoom_cut/`.
 > Bảng điều khiển: Google Sheet "Bảng điều khiển video – IT Team" (ID `1nQJCLzBykSoSAGejiv_zukv42UKv6Ddv-VNbGMZhlfY`), thư mục Drive "00 · Điều hành IT".
-> Tab: **Buổi** (mỗi buổi 1 dòng) · **Chi tiết cắt** (mỗi đoạn cắt 1 dòng, ô tick "Cắt") · **Hồ sơ loại buổi**.
+> Tab: **Video** (mỗi video 1 dòng; Người chính + Đi kèm 1–3; ô "Ép không ảnh") · **Người & Nhóm** (tên, giới tính, link avatar) · **Chi tiết cắt** (ô tick "Cắt") · **Loại video** (mẫu thumbnail, luật cắt, mô tả YouTube).
+> Thumbnail: 1 người có avatar → ảnh tròn; 1 người thiếu → mẫu không ảnh; 2–4 người → nhiều ảnh, ai thiếu dùng chibi nam/nữ; không ai có → không ảnh; ≥ 5 người → chọn tên nhóm (ảnh nhóm).
 
 ## 1. Sơ đồ
 ```
