@@ -1,0 +1,95 @@
+{
+  "_ghi_chu": "IT Team – mẫu B Cửa sổ code.",
+  "chu": {
+    "dong_tren": {
+      "xy": [
+        88,
+        269
+      ],
+      "font": "JetBrainsMono[wght].ttf",
+      "bien_the": "Bold",
+      "co": 22,
+      "mau": "#137A4C",
+      "viet_hoa": true
+    },
+    "tieu_de": {
+      "xy": [
+        88,
+        312
+      ],
+      "font": "Exo2[wght].ttf",
+      "bien_the": "ExtraBold",
+      "co": 50,
+      "mau": "#3D0A6E",
+      "rong_toi_da": 660,
+      "so_dong_toi_da": 2,
+      "gian_dong": 55,
+      "co_nho_nhat": 36,
+      "viet_hoa": true
+    },
+    "nguoi": {
+      "xy": [
+        88,
+        447
+      ],
+      "font": "BeVietnamPro-SemiBold.ttf",
+      "co": 24,
+      "mau": "#2B2238"
+    },
+    "ngay": {
+      "xy": [
+        104,
+        499
+      ],
+      "font": "JetBrainsMono[wght].ttf",
+      "bien_the": "Bold",
+      "co": 20,
+      "mau": "#FFFFFF",
+      "nhan": {
+        "hop": [
+          88,
+          491,
+          467,
+          532
+        ],
+        "mau": "#137A4C",
+        "bo_goc": 10,
+        "dem_phai": 16
+      }
+    }
+  },
+  "chu_co_dinh": [
+    {
+      "chu": "ewit-it-team / sinh-hoat.md",
+      "xy": [
+        160,
+        196
+      ],
+      "font": "JetBrainsMono[wght].ttf",
+      "bien_the": "Bold",
+      "co": 16,
+      "mau": "#FFFFFF"
+    },
+    {
+      "chu": "learn · build · pay it forward",
+      "xy": [
+        875,
+        612
+      ],
+      "font": "JetBrainsMono[wght].ttf",
+      "bien_the": "Bold",
+      "co": 15,
+      "mau": "#137A4C"
+    }
+  ],
+  "o_anh": {
+    "tam": [
+      1040,
+      360
+    ],
+    "ban_kinh": 195,
+    "mau_trong": "#1FAF6E",
+    "vien": "#3D0A6E",
+    "mau_nhan_ten": "#3D0A6E"
+  }
+}

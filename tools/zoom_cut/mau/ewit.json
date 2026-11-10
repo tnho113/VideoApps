@@ -1,0 +1,93 @@
+{
+  "_ghi_chu": "EWIT – 4 biến thể màu dùng chung bố cục; {nhan} = cột Màu nhấn trong tab Mẫu thumbnail.",
+  "chu": {
+    "tieu_de": {
+      "xy": [
+        48,
+        467
+      ],
+      "font": "Exo2[wght].ttf",
+      "bien_the": "ExtraBold",
+      "co": 46,
+      "mau": "#FFFFFF",
+      "rong_toi_da": 560,
+      "so_dong_toi_da": 2,
+      "gian_dong": 52,
+      "co_nho_nhat": 34,
+      "viet_hoa": true
+    },
+    "dong_tren": {
+      "xy": [
+        48,
+        587
+      ],
+      "font": "BeVietnamPro-Bold.ttf",
+      "co": 26,
+      "mau": "#FFFFFF",
+      "viet_hoa": true
+    },
+    "ngay": {
+      "xy": [
+        48,
+        629
+      ],
+      "font": "BeVietnamPro-SemiBold.ttf",
+      "co": 22,
+      "mau": "{nhan}"
+    }
+  },
+  "nhan_goc": {
+    "hop": [
+      290,
+      66,
+      464,
+      109
+    ],
+    "mau": "#3D0A6E",
+    "bo_goc": 22,
+    "xy": [
+      309,
+      76
+    ],
+    "phan": [
+      {
+        "chu": "ZOOM · ",
+        "font": "Exo2[wght].ttf",
+        "bien_the": "Bold",
+        "co": 20,
+        "mau": "#FFFFFF"
+      },
+      {
+        "chu": "LIVE",
+        "font": "Exo2[wght].ttf",
+        "bien_the": "ExtraBold",
+        "co": 20,
+        "mau": "{nhan2}"
+      }
+    ]
+  },
+  "logo": {
+    "hop": [
+      50,
+      40,
+      246,
+      150
+    ]
+  },
+  "o_anh": {
+    "tam": [
+      1010,
+      490
+    ],
+    "ban_kinh": 265,
+    "mau_trong": "#5B2A9E",
+    "vien": "{nhan}",
+    "mau_nhan_ten": "#3D0A6E",
+    "hop_phu_ngoai": [
+      790,
+      70,
+      1230,
+      720
+    ]
+  }
+}

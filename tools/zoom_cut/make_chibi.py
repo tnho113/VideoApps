@@ -16,8 +16,8 @@ def e(d, cx, cy, rx, ry, **kw):
     d.ellipse([(cx - rx) * S, (cy - ry) * S, (cx + rx) * S, (cy + ry) * S], **kw)
 
 
-def chibi(gender):
-    img = Image.new("RGB", (W, W), BG)
+def chibi(gender, transparent=False):
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0) if transparent else BG)
     d = ImageDraw.Draw(img)
     # Áo
     shirt = GREEN if gender == "nam" else "#7B3FBF"
@@ -54,7 +54,8 @@ def chibi(gender):
     e(d, 200, 362, 26, 14, fill="#FFB3B8")
     e(d, 400, 362, 26, 14, fill="#FFB3B8")
     d.arc([272 * S, 340 * S, 328 * S, 386 * S], 20, 160, fill=INK, width=6 * S)
-    return img.resize((600, 600), Image.LANCZOS)
+    img = img.resize((600, 600), Image.LANCZOS)
+    return img if transparent else img.convert("RGB")
 
 
 if __name__ == "__main__":
@@ -62,4 +63,5 @@ if __name__ == "__main__":
     os.makedirs(out, exist_ok=True)
     for g in ("nam", "nu"):
         chibi(g).save(os.path.join(out, f"chibi_{g}.png"))
-        print("Đã tạo", os.path.join(out, f"chibi_{g}.png"))
+        chibi(g, True).save(os.path.join(out, f"chibi_{g}_tachnen.png"))
+        print("Đã tạo chibi", g)

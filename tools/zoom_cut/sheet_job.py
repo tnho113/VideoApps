@@ -33,16 +33,37 @@ def build_people(video, people_table):
     names = [video.get(c, "").strip() for c in PEOPLE_COLS if video.get(c, "").strip()]
     notes = [n for n in names if n not in lookup]
     people = [{"ten": n, "link": lookup.get(n, {}).get("Link ảnh avatar", "").strip(),
+               "link_tach": lookup.get(n, {}).get("Link ảnh tách nền", "").strip(),
                "gioi_tinh": lookup.get(n, {}).get("Giới tính", "")} for n in names]
+    for p in people:
+        p["co_anh"] = bool(p["link"] or p["link_tach"])
     note = f"Không có trong tab Người & Nhóm: {', '.join(notes)}. " if notes else ""
-    if str(video.get("Ép không ảnh", "")).upper() == "TRUE" or not any(p["link"] for p in people):
+    if str(video.get("Ép không ảnh", "")).upper() == "TRUE" or not any(p["co_anh"] for p in people):
         return [], note
-    if len(people) == 1 and not people[0]["link"]:
+    if len(people) == 1 and not people[0]["co_anh"]:
         return [], note
-    missing = [p["ten"] for p in people if not p["link"]]
+    missing = [p["ten"] for p in people if not p["co_anh"]]
     if missing:
         note += f"Dùng chibi cho: {', '.join(missing)}. "
     return people, note
+
+
+def photo_style(video, people):
+    """'ngoai' nếu chọn Phủ ngoài và mọi người có ảnh đều có ảnh tách nền; ngược lại 'trong' (kèm ghi chú)."""
+    if not str(video.get("Kiểu ảnh", "")).startswith("Phủ"):
+        return "trong", ""
+    lack = [p["ten"] for p in people if p["co_anh"] and not p["link_tach"]]
+    if lack:
+        return "trong", f"Chưa có ảnh tách nền: {', '.join(lack)} → tạm dùng kiểu Trong vòng tròn. "
+    return "ngoai", ""
+
+
+def choose_template(video, vtype, templates):
+    code = (video.get("Mẫu thumbnail") or vtype.get("Mẫu thumbnail mặc định") or "").strip()
+    tpl = next((t for t in templates if t.get("Mã mẫu", "").strip() == code), None)
+    if not tpl:
+        raise ValueError(f"Không tìm thấy mẫu thumbnail '{code}' trong tab Mẫu thumbnail")
+    return tpl
 
 
 def speaker_line(video):
@@ -91,6 +112,7 @@ class Job:
         types = records(self.ss.worksheet("Loại video").get_all_values())
         self.vtype = next((t for t in types if t["Loại video"] == self.video["Loại video"]), {})
         self.people_table = records(self.ss.worksheet("Người & Nhóm").get_all_values())
+        self.templates = records(self.ss.worksheet("Mẫu thumbnail").get_all_values())
         self.cuts = records(self.ss.worksheet("Chi tiết cắt").get_all_values())
         self.folder = drive_id(self.video.get("Thư mục Drive của buổi", ""))
 
@@ -148,14 +170,32 @@ class Job:
                                           fields="id,webViewLink", supportsAllDrives=True).execute()
         return f["webViewLink"]
 
-    def avatars(self, workdir="/content/avatars"):
-        """Danh sách người cho thumbnail, ảnh đã tải về máy."""
+    def _get(self, link, workdir="/content/anh"):
+        fid = drive_id(link)
+        if not fid:
+            return None
         os.makedirs(workdir, exist_ok=True)
+        path = os.path.join(workdir, fid)
+        return path if os.path.exists(path) else self.download(fid, path)
+
+    def thumbnail(self, out):
+        """Chọn mẫu, tải nền/logo/ảnh người, ghép thumbnail. Trả về ghi chú."""
+        from thumb_template import compose, load_layout
+        tpl = choose_template(self.video, self.vtype, self.templates)
         people, note = build_people(self.video, self.people_table)
+        kieu, note2 = photo_style(self.video, people)
         for p in people:
-            fid = drive_id(p["link"])
-            p["anh"] = self.download(fid, os.path.join(workdir, fid + ".img")) if fid else None
-        return people, note
+            p["anh"] = self._get(p["link"])
+            p["anh_tach_nen"] = self._get(p["link_tach"])
+        layout = load_layout(tpl["Bố cục"], tpl.get("Màu nhấn"), tpl.get("Màu nhấn 2"))
+        content = {"dong_tren": fill_template(self.vtype.get("Dòng trên thumbnail", ""), self.video),
+                   "tieu_de": self.video.get("Tiêu đề", ""), "nguoi": speaker_line(self.video),
+                   "ngay": self.video.get("Ngày giờ", "")}
+        logo = self._get(tpl.get("Link logo", ""))
+        if layout.get("logo") and not logo:
+            note2 += f"Mẫu {tpl['Mã mẫu']} chưa có link logo. "
+        compose(layout, self._get(tpl["Link ảnh nền"]), content, out, people, kieu, logo)
+        return f"Mẫu {tpl['Mã mẫu']}, kiểu {kieu}. " + note + note2
 
 
-__all__ = ["Job", "build_people", "build_recipe", "fill_template", "speaker_line", "records", "fmt"]
+__all__ = ["Job", "build_people", "photo_style", "choose_template", "build_recipe", "fill_template", "speaker_line", "records", "fmt"]
