@@ -194,7 +194,8 @@ class Job:
         logo = self._get(tpl.get("Link logo", ""))
         if layout.get("logo") and not logo:
             note2 += f"Mẫu {tpl['Mã mẫu']} chưa có link logo. "
-        compose(layout, self._get(tpl["Link ảnh nền"]), content, out, people, kieu, logo)
+        show = str(self.video.get("Hiện tên dưới ảnh", "")).upper() == "TRUE"
+        compose(layout, self._get(tpl["Link ảnh nền"]), content, out, people, kieu, logo, show)
         return f"Mẫu {tpl['Mã mẫu']}, kiểu {kieu}. " + note + note2
 
 

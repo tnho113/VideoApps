@@ -78,14 +78,33 @@ def _circle(src, diameter, bg="#5B2A9E"):
     return im, mask.resize((diameter, diameter), Image.LANCZOS)
 
 
-def _name_tag(d, x, y, name, spec):
-    f = font({"font": "BeVietnamPro-SemiBold.ttf", "co": 20})
-    w = d.textlength(name, font=f) + 24
-    d.rounded_rectangle([x - w / 2, y - 16, x + w / 2, y + 16], radius=14, fill=spec["mau_nhan_ten"])
-    d.text((x, y), name, font=f, fill="white", anchor="mm")
+def _name_tag(img, x, y, name, spec, size=20):
+    """Nhãn tên ở chân ảnh: bóng đổ mờ + nền tối bán trong suốt + viền màu nhấn → chữ luôn rõ."""
+    if not name:
+        return
+    from PIL import ImageFilter
+    f = font({"font": "BeVietnamPro-Bold.ttf", "co": size})
+    probe = ImageDraw.Draw(img)
+    w, h = probe.textlength(name, font=f) + size * 1.4, size * 1.7
+    y = min(y, H - h / 2 - 10)
+    x = min(max(x, w / 2 + 10), W - w / 2 - 10)
+    box = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]
+    shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle([box[0], box[1] + 4, box[2], box[3] + 6], radius=h / 2,
+                                             fill=(0, 0, 0, 150))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(6))
+    tag = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    td = ImageDraw.Draw(tag)
+    r, g, b = Image.new("RGB", (1, 1), spec["mau_nhan_ten"]).getpixel((0, 0))
+    td.rounded_rectangle(box, radius=h / 2, fill=(r, g, b, 225), outline=spec["vien"], width=max(2, size // 10))
+    td.text((x, y), name, font=f, fill="white", anchor="mm", stroke_width=1, stroke_fill=(0, 0, 0, 120))
+    base = img.convert("RGBA")
+    base.alpha_composite(shadow)
+    base.alpha_composite(tag)
+    img.paste(base.convert("RGB"))
 
 
-def place_inside(img, people, spec):
+def place_inside(img, people, spec, show_names=False):
     cx, cy = spec["tam"]
     R = spec["ban_kinh"]
     d = ImageDraw.Draw(img)
@@ -99,10 +118,12 @@ def place_inside(img, people, spec):
         img.paste(face, (x - r, y - r), mask)
         if n > 1:
             d.ellipse([x - r, y - r, x + r, y + r], outline=spec["vien"], width=6)
-            _name_tag(d, x, y + r - 6, p.get("ten", ""), spec)
+        if show_names:
+            _name_tag(img, x, y + r - (40 if n == 1 else 6), p.get("ten", ""), spec, 30 if n == 1 else 20)
+            d = ImageDraw.Draw(img)
 
 
-def place_outside(img, people, spec):
+def place_outside(img, people, spec, show_names=False):
     """Người tách nền đứng trước vòng tròn: phần dưới tâm bị cắt theo vòng tròn, phía trên tràn ra."""
     cx, cy = spec["tam"]
     R = spec["ban_kinh"]
@@ -127,17 +148,18 @@ def place_outside(img, people, spec):
     alpha = Image.fromarray(np.minimum(np.asarray(layer.getchannel("A")), np.asarray(clip)))
     layer.putalpha(alpha)
     img.paste(layer, (0, 0), layer)
-    if n > 1:
-        d = ImageDraw.Draw(img)
+    if show_names:
         for i, p in enumerate(people):
-            _name_tag(d, int(x0 + i * slot_w * 0.6 + slot_w / 2), y1 - 30, p.get("ten", ""), spec)
+            stagger = (i % 2) * 46 if n > 2 else 0          # 3–4 người: so le để nhãn không chồng
+            _name_tag(img, int(x0 + i * slot_w * 0.6 + slot_w / 2), y1 - 45 - stagger, p.get("ten", ""), spec,
+                      30 if n == 1 else 18 if n > 2 else 22)
 
 
-def compose(layout, bg_path, content, out, people=None, kieu="trong", logo_path=None):
+def compose(layout, bg_path, content, out, people=None, kieu="trong", logo_path=None, show_names=False):
     """content: dong_tren, tieu_de, nguoi, ngay. people: list {ten, anh, anh_tach_nen, gioi_tinh}."""
     img = Image.open(bg_path).convert("RGB").resize((W, H))
     if people:
-        (place_outside if kieu == "ngoai" else place_inside)(img, people[:4], layout["o_anh"])
+        (place_outside if kieu == "ngoai" else place_inside)(img, people[:4], layout["o_anh"], show_names)
     d = ImageDraw.Draw(img)
     if layout.get("logo") and logo_path:
         lg = Image.open(logo_path).convert("RGBA")

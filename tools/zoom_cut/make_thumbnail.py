@@ -71,6 +71,7 @@ def main():
     ap.add_argument("--mau-nhan", default="#1FAF6E", help="Màu nhấn của biến thể mẫu")
     ap.add_argument("--kieu", default="trong", choices=["trong", "ngoai"])
     ap.add_argument("--logo")
+    ap.add_argument("--hien-ten", action="store_true", help="Hiện tên ở chân ảnh người")
     ap.add_argument("--nen", help="Ảnh nền của mẫu")
     ap.add_argument("--dong-tren", default="")
     ap.add_argument("--nguoi", default="")
@@ -84,7 +85,7 @@ def main():
             ten, anh, gt, tach = (item.split("|") + ["", "", ""])[:4]
             people.append({"ten": ten, "anh": anh or None, "gioi_tinh": gt, "anh_tach_nen": tach or None})
         compose(load_layout(a.mau, a.mau_nhan), a.nen, {"dong_tren": a.dong_tren, "tieu_de": a.text,
-                "nguoi": a.nguoi, "ngay": a.ngay}, a.output, people, a.kieu, a.logo)
+                "nguoi": a.nguoi, "ngay": a.ngay}, a.output, people, a.kieu, a.logo, a.hien_ten)
         return
     with tempfile.TemporaryDirectory() as tmp:
         frame = os.path.join(tmp, "frame.jpg")
