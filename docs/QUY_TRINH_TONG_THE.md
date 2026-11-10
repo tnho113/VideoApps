@@ -1,0 +1,47 @@
+# Quy trình tổng thể – Tool xử lý video IT Team EWIT
+
+> Cập nhật 2026-11-10. Tài liệu chốt cách tool vận hành. Code: `tools/zoom_cut/`.
+> Bảng điều khiển: Google Sheet "Bảng điều khiển video – IT Team" (ID `1nQJCLzBykSoSAGejiv_zukv42UKv6Ddv-VNbGMZhlfY`), thư mục Drive "00 · Điều hành IT".
+> Tab: **Buổi** (mỗi buổi 1 dòng) · **Chi tiết cắt** (mỗi đoạn cắt 1 dòng, ô tick "Cắt") · **Hồ sơ loại buổi**.
+
+## 1. Sơ đồ
+```
+ZOOM ghi hình → (1) video .mp4 + transcript .vtt vào thư mục Drive của buổi
+      ▼
+GOOGLE SHEET "Bảng điều khiển video – IT Team"   ◄── người dùng điều khiển
+  tab Buổi: mỗi buổi 1 dòng (Loại buổi, Buổi số, Tiêu đề, Người chia sẻ, Ngày giờ, Chế độ, Trạng thái)
+      ▼ (2) tra tab "Hồ sơ loại buổi"
+HỒ SƠ LOẠI BUỔI = mẫu thumbnail + luật cắt + mẫu mô tả/playlist YouTube
+      ▼ (3) AI đọc transcript theo luật cắt → công thức cắt → tab "Chi tiết cắt"
+Chế độ "Chờ duyệt": dừng, người dùng bỏ tick đoạn muốn giữ → đổi trạng thái "Đã duyệt"
+Chế độ "Tự động": chạy tiếp ngay
+      ▼ (4) cắt video + phụ đề .srt + thumbnail theo mẫu → lưu Drive (ket_qua/)
+      ▼ (5) đăng YouTube (Riêng tư) → ghi link vào Sheet, trạng thái "Xong"
+```
+
+## 2. Phân vai
+| Thành phần | Vai trò | Giới hạn |
+|---|---|---|
+| Google Sheet (+ Apps Script nhẹ) | Bảng điều khiển: dữ liệu, trạng thái, duyệt | Apps Script 6 phút/lần – không xử lý video nên không ảnh hưởng |
+| Colab (GĐ1–3) / GitHub Actions (GĐ4) | Máy chạy: cắt, thumbnail, đăng YouTube | Colab cần người bấm chạy; Actions 6 giờ/lần |
+| AI | Đọc transcript → công thức cắt | GĐ1–3: Claude trong chat (~60–80k token/buổi 150 phút, ước tính); GĐ4: Claude API (có phí) |
+
+## 3. Trạng thái một buổi
+`Mới → Đang phân tích → Chờ duyệt → Đã duyệt → Đang cắt → Xong` (hoặc `Lỗi`). Chế độ Tự động bỏ qua `Chờ duyệt`.
+
+## 4. Hồ sơ loại buổi
+| Loại buổi | Mẫu thumbnail | Luật cắt |
+|---|---|---|
+| Training nội bộ | A – Mạch lá (`mau/training.json`) | Giữ demo, hỏi đáp; cắt chờ, chào hỏi, lỗi chia sẻ màn hình, im lặng |
+| Sinh hoạt định kỳ | B – Cửa sổ code (chưa nối) | Giữ chia sẻ, thảo luận; cắt chuyện riêng, chờ đợi |
+| Lớp học – <tên lớp> | Mẫu riêng (chưa có) | Luật lớp tiếng Anh: giữ lặp lại có chủ đích để dạy |
+
+Thêm loại buổi mới = thêm 1 dòng hồ sơ + 1 ảnh nền + 1 file bố cục `mau/<ten>.json`.
+
+## 5. Lộ trình
+| GĐ | Nội dung | Trạng thái |
+|---|---|---|
+| 1 | Kiểm chứng lõi: cắt + thumbnail, thử 10 phút | Đang chạy thử |
+| 2 | Sheet điều khiển + hồ sơ loại buổi; Colab đọc/ghi Sheet; mẫu B | Đang làm |
+| 3 | Đăng YouTube, ghi link vào Sheet | Code có, chưa cài đặt API |
+| 4 | Tự động hoàn toàn: Zoom API, Claude API, GitHub Actions | Chưa làm |

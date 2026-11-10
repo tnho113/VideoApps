@@ -14,4 +14,5 @@ Khi một việc có thể tốn nhiều token (xử lý hàng loạt file/ảnh
 
 ## Dự án
 - App cắt video EWIT: xem `docs/HANDOFF_VIDEO_APP.md`.
+- Tool xử lý video Zoom của IT Team (đang làm): quy trình tổng thể ở `docs/QUY_TRINH_TONG_THE.md`, code ở `tools/zoom_cut/`.
 - Kho Quotes (Google Sheet "Kho Quotes", tab Quotes Q001… và tab Infographic I001…; ảnh trên Drive đặt tên theo STT).
