@@ -100,6 +100,12 @@ class Job:
         creds, _ = google.auth.default()
         self.ss = gspread.authorize(creds).open_by_key(sheet_id)
         self.drive = build("drive", "v3", credentials=creds)
+        self.ma_video = ma_video
+        self.refresh()
+
+    def refresh(self):
+        """Đọc lại Sheet (gọi trước mỗi bước để nhận thay đổi người dùng vừa sửa)."""
+        ma_video = self.ma_video
         self.ws = self.ss.worksheet("Video")
         rows = self.ws.get_all_values()
         self.head = rows[0]
@@ -181,6 +187,7 @@ class Job:
     def thumbnail(self, out):
         """Chọn mẫu, tải nền/logo/ảnh người, ghép thumbnail. Trả về ghi chú."""
         from thumb_template import compose, load_layout
+        self.refresh()  # lấy lựa chọn mới nhất trên Sheet (mẫu, kiểu ảnh, hiện tên, người)
         tpl = choose_template(self.video, self.vtype, self.templates)
         people, note = build_people(self.video, self.people_table)
         kieu, note2 = photo_style(self.video, people)
