@@ -248,6 +248,12 @@ class Job:
         importlib.reload(upload_youtube)  # luôn dùng bản code mới nhất vừa tải ở Bước 1
         from upload_youtube import add_to_playlist, channel_info, channel_matches, get_credentials, upload
         self.refresh()
+        if (self.video.get("Chế độ") == "Chờ duyệt"
+                and str(self.video.get("Duyệt đăng YouTube", "")).upper() != "TRUE"):
+            raise SystemExit("⏸ Chưa tick 'Duyệt đăng YouTube' ở tab Video – hãy xem video đã cắt rồi tick để đăng.")
+        cfg = {r.get("Mục", ""): r.get("Giá trị", "") for r in records(self.ss.worksheet("Cấu hình").get_all_values())}
+        if str(cfg.get("Tải phụ đề lên YouTube", "Không")).strip().lower() not in ("có", "co", "yes"):
+            srt_path = None  # mặc định không tải phụ đề tự động (dễ sai chữ, có thể bị hiểu lầm vi phạm)
         kenh = self.vtype.get("Kênh YouTube", "").strip()
         if not kenh:
             raise ValueError("Tab Loại video chưa điền cột 'Kênh YouTube' cho loại này")

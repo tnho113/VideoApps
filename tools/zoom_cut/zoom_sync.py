@@ -188,8 +188,8 @@ class ZoomSync:
         self.ss = gspread.authorize(creds).open_by_key(sheet_id)
         self.drive = build("drive", "v3", credentials=creds)
 
-    def accounts_from_env(self, codes, name=".env"):
-        """Đọc file .env nằm cùng thư mục với Sheet điều khiển (không in giá trị khóa)."""
+    def load_env(self, name=".env"):
+        """Đọc file .env nằm cùng thư mục với Sheet điều khiển → dict (không in giá trị)."""
         import io
         from googleapiclient.http import MediaIoBaseDownload
         parent = self.drive.files().get(fileId=self.ss.id, fields="parents",
@@ -207,6 +207,10 @@ class ZoomSync:
             _, done = dl.next_chunk()
         env = parse_env(buf.getvalue().decode("utf-8-sig"))
         print("Các tên khóa có trong .env:", ", ".join(sorted(env)) or "(trống)")
+        return env
+
+    def accounts_from_env(self, codes, env=None):
+        env = self.load_env() if env is None else env
         return env_accounts(env, [c.strip().upper() for c in codes])
 
     def config(self):

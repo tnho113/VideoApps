@@ -46,4 +46,9 @@ Thêm loại buổi mới = thêm 1 dòng hồ sơ + 1 ảnh nền + 1 file bố
 | 1 | Kiểm chứng lõi: cắt + thumbnail, thử 10 phút | Đang chạy thử |
 | 2 | Sheet điều khiển + hồ sơ loại buổi; Colab đọc/ghi Sheet; mẫu B | Đang làm |
 | 3 | Đăng YouTube, ghi link vào Sheet | Code có, chưa cài đặt API |
-| 4 | Tự động hoàn toàn: P1 Zoom → Drive + Sheet (`zoom_sync.py`, sổ tay `EWIT_Lay_video_Zoom`) · P2 Claude API ra công thức cắt · P3 GitHub Actions chạy theo lịch · P4 thông báo | P1 đang làm |
+| 4 | Tự động hoàn toàn: P1 Zoom → Drive + Sheet (`zoom_sync.py`, tab Danh sách lớp) · P2 AI ra công thức cắt (`ai_cut.py`: claude/gemini/openrouter, chọn ở tab Cấu hình) · P3 GitHub Actions chạy theo lịch · P4 thông báo | P1 xong; P2 đang thử |
+
+## Lớp an toàn khi đăng YouTube
+- Mặc định **không tải phụ đề tự động** (tab Cấu hình). Video IT_T001 kèm phụ đề sai chữ đã bị YouTube gỡ ("harassment"); bản không phụ đề thì không bị.
+- Chế độ *Chờ duyệt*: chỉ đăng khi tick **Duyệt đăng YouTube** ở tab Video.
+- Khóa bí mật tạm để ở `.env` (thư mục chứa Sheet); khi xong P3 sẽ chuyển một lần sang GitHub Secrets.
