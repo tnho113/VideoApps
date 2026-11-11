@@ -66,6 +66,26 @@ def pick_files(meeting):
     return (mp4[0] if mp4 else None), vtt
 
 
+def file_summary(meeting):
+    """'MP4(shared_screen_with_speaker_view):completed, TRANSCRIPT:processing, …' – để chẩn đoán."""
+    return ", ".join(f"{f.get('file_type')}{'(' + f['recording_type'] + ')' if f.get('file_type') == 'MP4' else ''}"
+                     f":{f.get('status', '?')}" for f in meeting.get("recording_files", [])) or "(không có file)"
+
+
+def still_processing(meeting):
+    return any(f.get("status") not in (None, "completed") for f in meeting.get("recording_files", []))
+
+
+def meeting_recordings(token, uuid):
+    """Bản ghi của 1 buổi theo UUID (UUID bắt đầu bằng '/' hoặc chứa '//' phải mã hóa 2 lần)."""
+    enc = urllib.parse.quote(uuid, safe="")
+    if uuid.startswith("/") or "//" in uuid:
+        enc = urllib.parse.quote(enc, safe="")
+    req = urllib.request.Request(f"{API}/meetings/{enc}/recordings", headers={"Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req) as r:
+        return json.load(r)
+
+
 def download(token, url, path):
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
     with urllib.request.urlopen(req) as r, open(path, "wb") as f:
@@ -237,6 +257,40 @@ class ZoomSync:
             _, resp = req.next_chunk()
         return resp["id"]
 
+    def _files_in(self, folder):
+        return self.drive.files().list(q=f"'{folder}' in parents and trashed=false", fields="files(id,name)",
+                                       supportsAllDrives=True, includeItemsFromAllDrives=True).execute()["files"]
+
+    def backfill_transcripts(self, ws, head, vids, tokens, workdir):
+        """Video đã tải nhưng thiếu .vtt: hỏi lại Zoom, có transcript thì tải bổ sung vào đúng thư mục."""
+        for i, v in enumerate(vids):
+            uuid, folder = v.get("Zoom ID", "").strip(), drive_id(v.get("Thư mục Drive của buổi", ""))
+            if not uuid or not folder:
+                continue
+            files = self._files_in(folder)
+            if any(f["name"].lower().endswith(".vtt") for f in files):
+                continue
+            mp4 = next((f["name"] for f in files if f["name"].lower().endswith(".mp4")), None)
+            for acc, token in tokens.items():
+                try:
+                    m = meeting_recordings(token, uuid)
+                except Exception:
+                    continue  # buổi không thuộc tài khoản này
+                _, vtt = pick_files(m)
+                if not vtt:
+                    print(f"ℹ️ {v['Mã video']}: Zoom vẫn chưa có transcript ({file_summary(m)})")
+                    break
+                base = os.path.splitext(mp4)[0] if mp4 else v["Mã video"]
+                p = os.path.join(workdir, base + ".vtt")
+                download(token, vtt["download_url"], p)
+                self._upload(p, folder)
+                os.remove(p)
+                note = re.sub(r"Zoom không có transcript[^.]*\.?", "", v.get("Ghi chú", "")).strip()
+                col = head.index("Ghi chú") + 1
+                ws.update_cell(i + 2, col, (note + " | Đã bổ sung transcript").strip(" |"))
+                print(f"✅ {v['Mã video']}: đã bổ sung transcript")
+                break
+
     def run(self, accounts, limit=None, dry_run=False, workdir="/content/zoom"):
         """accounts: {'ZKI': (account_id, client_id, client_secret), ...}.
         dry_run=True: chỉ liệt kê, không tải, không ghi Sheet."""
@@ -256,8 +310,11 @@ class ZoomSync:
         codes = [v["Mã video"] for v in vids]
         os.makedirs(workdir, exist_ok=True)
         added, done = [], 0
+        tokens = {acc: zoom_token(*keys) for acc, keys in accounts.items()}
+        if not dry_run:
+            self.backfill_transcripts(ws, head, vids, tokens, workdir)
         for acc, keys in accounts.items():
-            token = zoom_token(*keys)
+            token = tokens[acc]
             meetings = sorted((m for m in list_recordings(token, since) if m.get("uuid") not in seen),
                               key=lambda m: m.get("start_time", ""))
             print(f"[{acc}] {len(meetings)} buổi mới từ {since}")
@@ -271,7 +328,10 @@ class ZoomSync:
                 fname = folder_name(cls, acc, zid)
                 print(f"• {vn_label(m['start_time'])} | {m.get('topic')} → 📁 {fname}"
                       f"{'' if cls else '  (chưa có trong danh sách lớp)'} | MP4: {'có' if mp4 else 'KHÔNG'}"
-                      f" | transcript: {'có' if vtt else 'KHÔNG'}")
+                      f" | transcript: {'có' if vtt else 'KHÔNG'}\n    Zoom có: {file_summary(m)}")
+                if still_processing(m):
+                    print("    ⏳ Zoom còn đang xử lý file – để lần chạy sau lấy cho đủ (video + transcript)")
+                    continue
                 if dry_run or not mp4:
                     continue
                 folder = self._folder(root, safe_name(fname))
